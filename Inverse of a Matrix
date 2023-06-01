@@ -1,0 +1,153 @@
+//Inverse of a matrix                                                                                                                                                                                              #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_SIZE 10
+
+void swapRows(double matrix[MAX_SIZE][MAX_SIZE], int row1, int row2, int size) {
+    int i;
+    double temp;
+    for (i = 0; i < size; i++) {
+        temp = matrix[row1][i];
+        matrix[row1][i] = matrix[row2][i];
+        matrix[row2][i] = temp;
+    }
+}
+
+void scaleRow(double matrix[MAX_SIZE][MAX_SIZE], int row, double scalar, int size) {
+    int i;
+    for (i = 0; i < size; i++) {
+        matrix[row][i] *= scalar;
+    }
+}
+
+void addScaledRow(double matrix[MAX_SIZE][MAX_SIZE], int row1, int row2, double scalar, int size) {
+    int i;
+    for (i = 0; i < size; i++) {
+        matrix[row2][i] += scalar * matrix[row1][i];
+    }
+}
+
+void identityMatrix(double matrix[MAX_SIZE][MAX_SIZE], int size) {
+    int i, j;
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            if (i == j) {
+                matrix[i][j] = 1.0;
+            } else {
+                matrix[i][j] = 0.0;
+            }
+        }
+    }
+}
+
+void printMatrix(double matrix[MAX_SIZE][MAX_SIZE], int size) {
+    int i, j;
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            printf("%.2f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+void writeMatrixToFile(double matrix[MAX_SIZE][MAX_SIZE], int size, const char* filename) {
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Unable to open the file.\n");
+        return;
+    }
+
+    int i, j;
+    for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+            fprintf(file, "%.2f ", matrix[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+
+void readMatrixFromFile(double matrix[MAX_SIZE][MAX_SIZE], int* size, const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Unable to open the file.\n");
+        return;
+    }
+
+    int i, j;
+    fscanf(file, "%d", size);
+    for (i = 0; i < *size; i++) {
+        for (j = 0; j < *size; j++) {
+            fscanf(file, "%lf", &matrix[i][j]);
+        }
+    }
+
+    fclose(file);
+}
+
+void invertMatrix(double matrix[MAX_SIZE][MAX_SIZE], double inverse[MAX_SIZE][MAX_SIZE], int size) {
+    int i, j;
+    double scalar;
+
+    // Create an identity matrix of the same size
+    identityMatrix(inverse, size);
+
+    // Perform Gauss-Jordan elimination
+    for (i = 0; i < size; i++) {
+        // If the current diagonal element is zero, swap rows to make it non-zero
+        if (matrix[i][i] == 0.0) {
+            for (j = i + 1; j < size; j++) {
+                if (matrix[j][i] != 0.0) {
+                    swapRows(matrix, i, j, size);
+                    swapRows(inverse, i, j, size);
+                    break;
+                }
+            }
+        }
+
+        // Scale the current row so that the diagonal element becomes 1
+        scalar = 1.0 / matrix[i][i];
+        scaleRow(matrix, i, scalar, size);
+        scaleRow(inverse, i, scalar, size);
+
+        // Perform row operations to make other elements in the column zero
+        for (j = 0; j < size; j++) {
+            if (j != i) {
+                scalar = -matrix[j][i];
+                addScaledRow(matrix, i, j, scalar, size);
+                addScaledRow(inverse, i, j, scalar, size);
+            }
+        }
+    }
+}
+
+int main() {
+    const char* inputFile = "matrix.txt";
+    const char* outputFile = "inverse.txt";
+
+    int size;
+    double matrix[MAX_SIZE][MAX_SIZE];
+    double inverse[MAX_SIZE][MAX_SIZE];
+
+    // Read the matrix from the input file
+    readMatrixFromFile(matrix, &size, inputFile);
+
+    // Calculate the inverse of the matrix
+    clock_t start = clock();
+    invertMatrix(matrix, inverse, size);
+    clock_t end = clock();
+    double cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+
+    printf("Matrix inverse completed in %.4f seconds.\n", cpu_time_used);
+
+    // Print the inverse matrix
+    printf("Inverse:\n");
+    printMatrix(inverse, size);
+
+    // Write the inverse matrix to the output file
+    writeMatrixToFile(inverse, size, outputFile);
+
+    return 0;
+}
