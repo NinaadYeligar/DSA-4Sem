@@ -1,0 +1,167 @@
+#include <stdio.h>
+#include <stdlib.h>
+struct Node                            //Structure
+{
+   int data;
+   struct Node *LEFT;
+   struct Node *RIGHT;
+   int height;
+};
+int max(int a, int b);
+int height(struct Node *N)
+{
+   if (N == NULL)
+      return 0;
+   return N->height;
+}
+int max(int a, int b)
+{
+   return (a > b) ? a : b;
+}
+struct Node *newNode(int data)                         //creation(node)
+{
+   struct Node *node = (struct Node *) malloc(sizeof(struct Node));
+   node->data = data;
+   node->LEFT = NULL;
+   node->RIGHT = NULL;
+   node->height = 1;
+   return (node);
+}
+struct Node *rightRotate(struct Node *y)
+{
+   struct Node *x = y->LEFT;
+   struct Node *T2 = x->RIGHT;
+   x->RIGHT = y;
+   y->LEFT = T2;
+   y->height = max(height(y->LEFT), height(y->RIGHT)) + 1;
+   x->height = max(height(x->LEFT), height(x->RIGHT)) + 1;
+   return x;
+}
+struct Node *leftRotate(struct Node *x)
+{
+   struct Node *y = x->RIGHT;
+   struct Node *T2 = y->LEFT;
+   y->LEFT = x;
+   x->RIGHT = T2;
+   x->height = max(height(x->LEFT), height(x->RIGHT)) + 1;
+   y->height = max(height(y->LEFT), height(y->RIGHT)) + 1;
+   return y;
+}
+int getBalance(struct Node *N)
+{
+   if (N == NULL)
+      return 0;
+   return height(N->LEFT) - height(N->RIGHT);
+}
+struct Node *insertNode(struct Node *node, int data)         //insertion(node)
+{
+   if (node == NULL)
+      return (newNode(data));
+   if (data < node->data)
+      node->LEFT = insertNode(node->LEFT, data);
+   else if (data > node->data)
+      node->RIGHT = insertNode(node->RIGHT, data);
+   else
+      return node;
+   node->height = 1 + max(height(node->LEFT),
+                     height(node->RIGHT));
+   int balance = getBalance(node);
+   if (balance > 1 && data < node->LEFT->data)
+      return rightRotate(node);
+   if (balance < -1 && data > node->RIGHT->data)
+      return leftRotate(node);
+   if (balance > 1 && data > node->LEFT->data)
+   {
+      node->LEFT = leftRotate(node->LEFT);
+      return rightRotate(node);
+   }
+   if (balance < -1 && data < node->RIGHT->data)
+   {
+      node->RIGHT = rightRotate(node->RIGHT);
+      return leftRotate(node);
+   }
+   return node;
+}
+struct Node *minValueNode(struct Node *node)
+{
+   struct Node *current = node;
+   while (current->LEFT != NULL)
+      current = current->LEFT;
+   return current;
+}
+struct Node *deleteNode(struct Node *root, int data)                //deletion(node)
+{
+   if (root == NULL)
+      return root;
+   if (data < root->data)
+      root->LEFT = deleteNode(root->LEFT, data);
+   else if (data > root->data)
+      root->RIGHT = deleteNode(root->RIGHT, data);
+   else
+   {
+      if ((root->LEFT == NULL) || (root->RIGHT == NULL))
+      {
+         struct Node *temp = root->LEFT ? root->LEFT : root->RIGHT;
+         if (temp == NULL)
+         {
+            temp = root;
+            root = NULL;
+         } else
+            *root = *temp;
+         free(temp);
+      } else
+      {
+         struct Node *temp = minValueNode(root->RIGHT);
+         root->data = temp->data;
+         root->RIGHT = deleteNode(root->RIGHT, temp->data);
+      }
+   }
+   if (root == NULL)
+      return root;
+   root->height = 1 + max(height(root->LEFT),
+                     height(root->RIGHT));
+   int balance = getBalance(root);
+   if (balance > 1 && getBalance(root->LEFT) >= 0)
+      return rightRotate(root);
+   if (balance > 1 && getBalance(root->LEFT) < 0)
+   {
+      root->LEFT = leftRotate(root->LEFT);
+      return rightRotate(root);
+   }
+   if (balance < -1 && getBalance(root->RIGHT) <= 0)
+      return leftRotate(root);
+   if (balance < -1 && getBalance(root->RIGHT) > 0)
+   {
+      root->RIGHT = rightRotate(root->RIGHT);
+      return leftRotate(root);
+   }
+   return root;
+}
+
+                                                                  // Print or display the tree
+void printTree(struct Node *root)
+{
+   if (root != NULL)
+   {
+      printTree(root->LEFT);
+      printf("%d ", root->data);
+      printTree(root->RIGHT);
+   }
+}
+int main()
+{
+   struct Node *root = NULL;
+   root = insertNode(root, 22);
+   root = insertNode(root, 14);
+   root = insertNode(root, 72);
+   root = insertNode(root, 44);
+   root = insertNode(root, 25);
+   root = insertNode(root, 63);
+   root = insertNode(root, 98);
+   printf("AVL Tree: ");
+   printTree(root);
+   root = deleteNode(root, 25);
+   printf("\nAfter deletion: ");
+   printTree(root);
+   return 0;
+}
